@@ -1,4 +1,4 @@
-package MojoX::Validator::Constraint::Uri;
+package MojoX::Validator::Constraint::Single::Uri;
 
 use strict;
 use warnings;

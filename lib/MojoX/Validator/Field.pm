@@ -3,14 +3,10 @@ package MojoX::Validator::Field;
 use strict;
 use warnings;
 
-use base 'Mojo::Base';
-
-use Mojo::Loader;
-use Mojo::ByteStream;
+use base 'MojoX::Validator::ConstraintContainer';
 
 __PACKAGE__->attr('name');
 __PACKAGE__->attr(['required', 'multiple'] => 0);
-__PACKAGE__->attr('constraints' => sub { [] });
 __PACKAGE__->attr('error');
 __PACKAGE__->attr('trim' => 1);
 
@@ -29,7 +25,7 @@ sub value {
         $self->{value} = ref($value) eq 'ARRAY' ? $value->[0] : $value;
     }
 
-    return unless $self->trim;
+    return $self unless $self->trim;
 
     foreach (
         ref($self->{value}) eq 'ARRAY' ? @{$self->{value}} : ($self->{value}))
@@ -37,36 +33,16 @@ sub value {
         s/^\s+//;
         s/\s+$//;
     }
+
+    return $self;
 }
 
-sub constraint {
+sub bulk {
     my $self = shift;
-    my $name = shift;
+    my $bulk = shift;
 
-    my $constraint;
-
-    if (ref $name) {
-        $constraint = $name;
-    }
-    else {
-        my $class = "MojoX::Validator::Constraint::"
-          . Mojo::ByteStream->new($name)->camelize;
-
-        # Load class
-        if (my $e = Mojo::Loader->load($class)) {
-            die ref $e
-              ? qq/Can't load class "$class": $e/
-              : qq/Class "$class" doesn't exist./;
-        }
-
-        $constraint = $class->new(args => @_);
-    }
-
-    push @{$self->constraints}, $constraint;
+    push @{$self->constraints}, @{$bulk->constraints};
 }
-
-sub regexp { shift->constraint(regexp => @_) }
-sub length { shift->constraint(length => @_) }
 
 sub is_valid {
     my ($self) = @_;

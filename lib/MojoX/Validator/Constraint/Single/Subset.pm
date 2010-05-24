@@ -1,4 +1,4 @@
-package MojoX::Validator::Constraint::Subset;
+package MojoX::Validator::Constraint::Single::Subset;
 
 use strict;
 use warnings;

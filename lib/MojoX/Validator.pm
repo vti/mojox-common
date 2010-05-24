@@ -6,9 +6,12 @@ use warnings;
 use base 'Mojo::Base';
 
 use MojoX::Validator::Field;
+use MojoX::Validator::Bulk;
+use MojoX::Validator::Group;
 
 __PACKAGE__->attr('current_field');
 __PACKAGE__->attr('fields' => sub { {} });
+__PACKAGE__->attr('groups' => sub { [] });
 __PACKAGE__->attr(has_errors => 0);
 __PACKAGE__->attr(trim       => 1);
 
@@ -23,13 +26,34 @@ sub field {
     $self->fields->{$name} = $field;
 }
 
+sub bulk {MojoX::Validator::Bulk->new}
+
+sub group {
+    my $self   = shift;
+    my $name   = shift;
+    my $fields = shift;
+
+    $fields = [map {$self->fields->{$_}} @$fields];
+
+    my $group = MojoX::Validator::Group->new(name => $name, fields => $fields);
+    push @{$self->groups}, $group;
+
+    return $group;
+}
+
 sub errors {
     my ($self) = @_;
 
     my $errors = {};
 
+    # Field errors
     foreach my $field (values %{$self->fields}) {
         $errors->{$field->name} = $field->error if $field->error;
+    }
+
+    # Group errors
+    foreach my $group (@{$self->groups}) {
+        $errors->{$group->name} = $group->error if $group->error;
     }
 
     return $errors;
@@ -38,8 +62,14 @@ sub errors {
 sub clear_errors {
     my ($self) = @_;
 
+    # Clear field errors
     foreach my $field (values %{$self->fields}) {
         $field->error('');
+    }
+
+    # Clear group errors
+    foreach my $group (@{$self->groups}) {
+        $group->error('');
     }
 
     $self->has_errors(0);
@@ -64,8 +94,6 @@ sub validate {
 
     $self->clear_errors;
 
-    #$self->trim_fields if $self->trim;
-
     foreach my $field (values %{$self->fields}) {
         $field->clear_value;
 
@@ -74,7 +102,11 @@ sub validate {
         $self->has_errors(1) unless $field->is_valid;
     }
 
-    return !$self->has_errors ? 1 : 0;
+    foreach my $group (@{$self->groups}) {
+        $self->has_errors(1) unless $group->is_valid;
+    }
+
+    return $self->has_errors ? 0 : 1;
 }
 
 sub values {

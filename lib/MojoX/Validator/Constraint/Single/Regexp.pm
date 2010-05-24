@@ -1,4 +1,4 @@
-package MojoX::Validator::Constraint::Regexp;
+package MojoX::Validator::Constraint::Single::Regexp;
 
 use strict;
 use warnings;

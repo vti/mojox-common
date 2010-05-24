@@ -5,10 +5,10 @@ use warnings;
 
 use Test::More tests => 4;
 
-use MojoX::Validator::Constraint::Regexp;
+use MojoX::Validator::Constraint::Single::Regexp;
 
 my $constraint =
-  MojoX::Validator::Constraint::Regexp->new(args => qr/^[a-z]+$/);
+  MojoX::Validator::Constraint::Single::Regexp->new(args => qr/^[a-z]+$/);
 
 ok($constraint);
 
