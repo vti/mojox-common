@@ -13,7 +13,9 @@ sub is_valid {
     my $e = shift @$values;
 
     foreach (@$values) {
-        return 0 unless $e eq $_;
+        return 0
+          unless (!defined $e && !defined $_)
+          || (defined $e && defined $_ && $e eq $_);
     }
 
     return 1;

@@ -3,12 +3,28 @@ package MojoX::Validator::Field;
 use strict;
 use warnings;
 
-use base 'MojoX::Validator::ConstraintContainer';
+use base 'Mojo::Base';
+
+use MojoX::Validator::ConstraintBuilder;
 
 __PACKAGE__->attr('name');
 __PACKAGE__->attr(['required', 'multiple'] => 0);
 __PACKAGE__->attr('error');
 __PACKAGE__->attr('trim' => 1);
+__PACKAGE__->attr(constraints => sub { [] });
+
+sub length {shift->constraint('single-length' => @_)}
+sub regexp {shift->constraint('single-regexp' => @_)}
+
+sub constraint {
+    my $self = shift;
+
+    my $constraint = MojoX::Validator::ConstraintBuilder->build(@_);
+
+    push @{$self->constraints}, $constraint;
+
+    return $self;
+}
 
 sub value {
     my $self = shift;
@@ -37,13 +53,6 @@ sub value {
     return $self;
 }
 
-sub bulk {
-    my $self = shift;
-    my $bulk = shift;
-
-    push @{$self->constraints}, @{$bulk->constraints};
-}
-
 sub is_valid {
     my ($self) = @_;
 
@@ -66,6 +75,12 @@ sub is_valid {
     }
 
     return 1;
+}
+
+sub clear_error {
+    my $self = shift;
+
+    delete $self->{error};
 }
 
 sub clear_value {

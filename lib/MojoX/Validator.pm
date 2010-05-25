@@ -6,39 +6,97 @@ use warnings;
 use base 'Mojo::Base';
 
 use MojoX::Validator::Field;
-use MojoX::Validator::Bulk;
 use MojoX::Validator::Group;
+use MojoX::Validator::Condition;
 
-__PACKAGE__->attr('current_field');
-__PACKAGE__->attr('fields' => sub { {} });
-__PACKAGE__->attr('groups' => sub { [] });
-__PACKAGE__->attr(has_errors => 0);
-__PACKAGE__->attr(trim       => 1);
+__PACKAGE__->attr('fields'     => sub { {} });
+__PACKAGE__->attr('bulk');
+__PACKAGE__->attr('groups'     => sub { [] });
+__PACKAGE__->attr('conditions' => sub { [] });
+__PACKAGE__->attr(has_errors   => 0);
+__PACKAGE__->attr(trim         => 1);
 
 sub field {
     my $self = shift;
-    my $name = shift;
 
-    my $field = MojoX::Validator::Field->new(name => $name);
+    return $self->{fields}->{$_[0]}
+      if ref($_[0]) ne 'ARRAY' && $self->{fields}->{$_[0]};
 
-    $self->current_field($name);
+    my $names = shift;
+    $names = [$names] unless ref($names) eq 'ARRAY';
 
-    $self->fields->{$name} = $field;
+    foreach my $name (@$names) {
+        my $field = MojoX::Validator::Field->new(name => $name);
+
+        $self->fields->{$name} = $field;
+    }
+
+    $self->bulk($names);
+
+    return $self;
 }
 
-sub bulk {MojoX::Validator::Bulk->new}
+sub required {
+    my $self = shift;
+
+    foreach my $name (@{$self->bulk}) {
+        $self->field($name)->required(@_);
+    }
+
+    return $self;
+}
+
+sub length {
+    my $self = shift;
+
+    foreach my $name (@{$self->bulk}) {
+        $self->field($name)->length(@_);
+    }
+
+    return $self;
+}
+
+sub regexp {
+    my $self = shift;
+
+    foreach my $name (@{$self->bulk}) {
+        $self->field($name)->regexp(@_);
+    }
+
+    return $self;
+}
+
+sub when {
+    my $self = shift;
+
+    my $cond = MojoX::Validator::Condition->new->when(@_);
+
+    push @{$self->conditions}, $cond;
+
+    return $cond;
+}
 
 sub group {
     my $self   = shift;
     my $name   = shift;
     my $fields = shift;
 
-    $fields = [map {$self->fields->{$_}} @$fields];
+    $fields = [map { $self->fields->{$_} } @$fields];
 
-    my $group = MojoX::Validator::Group->new(name => $name, fields => $fields);
+    my $group =
+      MojoX::Validator::Group->new(name => $name, fields => $fields);
     push @{$self->groups}, $group;
 
     return $group;
+}
+
+sub condition {
+    my $self = shift;
+
+    my $cond = MojoX::Validator::Condition->new;
+    push @{$self->conditions}, $cond;
+
+    return $cond;
 }
 
 sub errors {
@@ -75,38 +133,55 @@ sub clear_errors {
     $self->has_errors(0);
 }
 
-sub trim_fields {
-    my $self = shift;
-
-    foreach my $field (values %{$self->fields}) {
-        my $value = $field->value;
-        next unless defined $value;
-
-        $value =~ s/^\s+//;
-        $value =~ s/\s+$//;
-        $field->value($value);
-    }
-}
-
 sub validate {
     my ($self) = shift;
     my $params = shift;
 
     $self->clear_errors;
 
+    $self->populate_fields($params);
+
+    while (1) {
+        $self->validate_fields;
+        $self->validate_groups;
+
+        my @conditions = grep {!$_->matched && $_->match($self->fields)} @{$self->conditions};
+        last unless @conditions;
+
+        foreach my $cond (@conditions) {
+            $cond->then->($self);
+        }
+    }
+
+    return $self->has_errors ? 0 : 1;
+}
+
+sub populate_fields {
+    my $self = shift;
+    my $params = shift;
+
     foreach my $field (values %{$self->fields}) {
         $field->clear_value;
 
         $field->value($params->{$field->name});
+    }
+}
 
+sub validate_fields {
+    my $self = shift;
+    my $params = shift;
+
+    foreach my $field (values %{$self->fields}) {
         $self->has_errors(1) unless $field->is_valid;
     }
+}
+
+sub validate_groups {
+    my $self = shift;
 
     foreach my $group (@{$self->groups}) {
         $self->has_errors(1) unless $group->is_valid;
     }
-
-    return $self->has_errors ? 0 : 1;
 }
 
 sub values {

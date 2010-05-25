@@ -3,14 +3,27 @@ package MojoX::Validator::Group;
 use strict;
 use warnings;
 
-use base 'MojoX::Validator::ConstraintContainer';
+use base 'Mojo::Base';
+
+use MojoX::Validator::ConstraintBuilder;
 
 __PACKAGE__->attr('name');
 __PACKAGE__->attr('error');
+__PACKAGE__->attr(constraints => sub { [] });
 __PACKAGE__->attr(fields => sub { [] });
 
 sub unique { shift->constraint('group-unique') }
 sub equal  { shift->constraint('group-equal') }
+
+sub constraint {
+    my $self = shift;
+
+    my $constraint = MojoX::Validator::ConstraintBuilder->build(@_);
+
+    push @{$self->constraints}, $constraint;
+
+    return $self;
+}
 
 sub is_valid {
     my $self = shift;
