@@ -5,7 +5,7 @@ use warnings;
 
 use base 'MojoX::CouchDB::Base';
 
-use constant DEBUG => $ENV{KURLY_DEBUG} ? 1 : 0;
+use constant DEBUG => $ENV{MOJOX_DEBUG} ? 1 : 0;
 
 __PACKAGE__->attr('database');
 __PACKAGE__->attr([qw/id rev/]);

@@ -9,7 +9,7 @@ use MojoX::CouchDB::Database;
 use MojoX::CouchDB::Document;
 use MojoX::CouchDB::Design;
 
-use constant DEBUG => $ENV{KURLY_DEBUG} ? 1 : 0;
+use constant DEBUG => $ENV{MOJOX_DEBUG} ? 1 : 0;
 
 __PACKAGE__->attr('database');
 __PACKAGE__->attr(address => 'localhost');

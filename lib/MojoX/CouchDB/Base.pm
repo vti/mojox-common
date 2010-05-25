@@ -9,7 +9,7 @@ use Mojo::URL;
 use Mojo::Client;
 use Mojo::JSON;
 
-use constant DEBUG => $ENV{KURLY_DEBUG} ? 1 : 0;
+use constant DEBUG => $ENV{MOJOX_DEBUG} ? 1 : 0;
 
 __PACKAGE__->attr(address  => 'localhost');
 __PACKAGE__->attr(port     => '5984');
