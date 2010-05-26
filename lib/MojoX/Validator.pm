@@ -66,6 +66,16 @@ sub regexp {
     return $self;
 }
 
+sub email {
+    my $self = shift;
+
+    foreach my $name (@{$self->bulk}) {
+        $self->field($name)->email(@_);
+    }
+
+    return $self;
+}
+
 sub when {
     my $self = shift;
 

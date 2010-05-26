@@ -13,8 +13,9 @@ __PACKAGE__->attr('error');
 __PACKAGE__->attr('trim' => 1);
 __PACKAGE__->attr(constraints => sub { [] });
 
-sub length {shift->constraint('single-length' => @_)}
-sub regexp {shift->constraint('single-regexp' => @_)}
+sub length { shift->constraint('single-length' => @_) }
+sub regexp { shift->constraint('single-regexp' => @_) }
+sub email  { shift->constraint('single-email'  => @_) }
 
 sub constraint {
     my $self = shift;
