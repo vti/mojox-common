@@ -27,7 +27,6 @@ sub register {
 
             $class =
               join('::', $namespace, Mojo::ByteStream->new($class)->camelize);
-            warn "class=$class";
 
             # Load class
             if (my $e = Mojo::Loader->load($class)) {
