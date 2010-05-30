@@ -25,6 +25,9 @@ sub register {
     # Same path request configuration
     my $same_path = $conf->{same_path} || 10;
 
+    # Identical fields configuration
+    my $identical_fields_factor = $conf->{identical_fields_factor} || 0.5;
+
     # Honeypot link
     $app->routes->route($honeypot_link)->via('post')->to(
         cb => sub {
@@ -80,6 +83,23 @@ sub register {
             my $last_form_submit = $c->session->{last_form_submit} || 0;
             $bot_detected_cb->($c, 'Too fast form submission'), return
               if time - $last_form_submit < $too_fast;
+
+            # Check referrer
+            if (my $referrer = $c->req->headers->referrer) {
+                my $host = $c->req->url->base->host || $c->req->url->base->ihost;
+                $bot_detected_cb->($c, 'Wrong referrer'), return
+                  unless $referrer =~ m/$host/;
+            }
+
+            # Identical fields
+            my @params = keys %{$c->req->params->to_hash};
+            if (@params > 2) {
+                my $values = {};
+                ++$values->{$c->param($_)} for @params;
+                my @repeated = grep {$_ >= 2} values %$values;
+                $bot_detected_cb->($c, 'Identical fields'), return
+                  if (@params - @repeated) / @params > $identical_fields_factor;
+            }
 
             # Remember the last form submission time
             $c->session->{last_form_submit} = time;
