@@ -36,8 +36,13 @@ sub register {
     # Dummy input configuration
     my $dummy_input = $conf->{dummy_input} || 'dummy';
 
-    $app->renderer->add_helper(dummy_input =>
-          sub { shift->helper('input', $dummy_input, value => 'dummy'); });
+    $app->renderer->add_helper(
+        dummy_input => sub {
+            shift->helper(
+                'input' => $dummy_input => value => 'dummy' => style =>
+                  'display:none');
+        }
+    );
 
     # Too fast form submitting configuration
     my $too_fast = $conf->{too_fast} || 5;

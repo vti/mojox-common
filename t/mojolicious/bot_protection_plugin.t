@@ -89,8 +89,10 @@ $t->post_form_ok(
 # Helpers
 $t = Test::Mojo->new;
 $t->client(Mojo::Client->new);
-$t->get_ok('/helpers')->status_is(200)
-  ->content_is(qq/<input name="dummy" value="dummy" \/>\n<form action="\/honeypot" method="post"><input name="submit" type="submit" \/><\/form>\n/);
+$t->get_ok('/helpers')->status_is(200)->content_is(<<'EOF');
+<input name="dummy" style="display:none" value="dummy" />
+<form action="/honeypot" method="post"><input name="submit" type="submit" /></form>
+EOF
 
 __DATA__
 
