@@ -30,6 +30,7 @@ Features
 
 * Dummy field (bot fills out all the fields, including not visible one)
 * Honeypot form (bot submits non visible to a normal user form)
+* Cookies support check (bot has no cookies support)
 * Flood protection (bot submits forms too fast)
 * DDoS protection (bot submits the same forms many times)
 * Referrer check (bot submits form with invalid referrer header)

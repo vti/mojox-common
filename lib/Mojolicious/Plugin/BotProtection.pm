@@ -17,7 +17,7 @@ sub register {
     my $honeypot_link  = $conf->{honeypot_link}   || '/honeypot';
 
     # Honeypot link
-    $app->routes->route($honeypot_link)->via('post')->to(
+    $app->routes->route($honeypot_link)->via($honeypot_method)->to(
         cb => sub {
             my $c = shift;
             $c->session->{honeypot} = 1;
