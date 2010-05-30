@@ -86,9 +86,10 @@ sub register {
 
             # Check referrer
             if (my $referrer = $c->req->headers->referrer) {
-                my $host = $c->req->url->base->host || $c->req->url->base->ihost;
+                my $address = $c->req->url->scheme || 'http';
+                $address .= $c->req->url->base->host || $c->req->url->base->ihost;
                 $bot_detected_cb->($c, 'Wrong referrer'), return
-                  unless $referrer =~ m/$host/;
+                  unless $referrer =~ m/^$address/;
             }
 
             # Identical fields
