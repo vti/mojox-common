@@ -95,6 +95,10 @@ sub register {
             $bot_detected_cb->($c, 'Dummy input submitted'), return
               if $c->param($dummy_input);
 
+            # No chance for the bot without cookies
+            $bot_detected_cb->($c, 'No cookies'), return
+              unless $c->signed_cookie('mojolicious');
+
             # Bot is too fast
             my $last_form_submit = $c->session->{last_form_submit} || 0;
             $bot_detected_cb->($c, 'Too fast form submission'), return
