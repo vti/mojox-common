@@ -111,7 +111,11 @@ sub _bot_detected_cb {
     my $c      = shift;
     my $action = shift;
 
-    $c->app->log->error("Bot detected: $action");
+    my $ip = $c->tx->remote_address;
+    my $ua = $c->req->headers->user_agent;
+    my $method = $c->req->method;
+    my $path = $c->req->url->path;
+    $c->app->log->error("Bot detected: $action: $method $path from $ip via $ua");
 
     return $c->render_not_found;
 }
