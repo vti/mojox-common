@@ -9,7 +9,7 @@ use Test::More;
 
 plan skip_all => 'working sockets required for this test!'
   unless Mojo::IOLoop->new->generate_port;
-plan tests => 47;
+plan tests => 50;
 
 use Mojolicious::Lite;
 use Test::Mojo;
@@ -23,11 +23,14 @@ plugin 'bot_protection';
 # GET /
 get '/' => sub { shift->render_text('Hello') };
 
+# POST /
+post '/' => sub { shift->render_text('Hello') };
+
 # GET /foo
 get '/foo' => sub { shift->render_text('Hello') };
 
-# POST /
-post '/' => sub { shift->render_text('Hello') };
+# GET /helpers
+get '/helpers' => 'helpers';
 
 my $t;
 
@@ -82,3 +85,15 @@ $t->post_form_ok(
     '/' => {foo => 'bar', bar => 'bar'},
     {'Referer' => 'http://foo.com'}
 )->status_is(404);
+
+# Helpers
+$t = Test::Mojo->new;
+$t->client(Mojo::Client->new);
+$t->get_ok('/helpers')->status_is(200)
+  ->content_is(qq/<input name="dummy" value="dummy" \/>\n<form action="\/honeypot" method="post"><input name="submit" type="submit" \/><\/form>\n/);
+
+__DATA__
+
+@@ helpers.html.ep
+<%= dummy_input %>
+<%= honeypot_form %>

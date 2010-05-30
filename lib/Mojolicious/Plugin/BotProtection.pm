@@ -16,8 +16,28 @@ sub register {
     my $honepot_method = $conf->{honeypot_method} || 'post';
     my $honeypot_link  = $conf->{honeypot_link}   || '/honeypot';
 
-    # Dummy field configuration
-    my $dummy_field = $conf->{dummy_field} || 'dummy';
+    # Honeypot link
+    $app->routes->route($honeypot_link)->via('post')->to(
+        cb => sub {
+            my $c = shift;
+            $c->session->{honeypot} = 1;
+            $c->render_text('Welcome!');
+        }
+    )->name('honeypot_link');
+
+    $app->renderer->add_helper(
+        honeypot_form => sub {
+            my $c = shift;
+            $c->helper('form_for' => 'honeypot_link' => method => 'post' =>
+                  sub { $c->helper('input', 'submit', type => 'submit'); });
+        }
+    );
+
+    # Dummy input configuration
+    my $dummy_input = $conf->{dummy_input} || 'dummy';
+
+    $app->renderer->add_helper(dummy_input =>
+          sub { shift->helper('input', $dummy_input, value => 'dummy'); });
 
     # Too fast form submitting configuration
     my $too_fast = $conf->{too_fast} || 5;
@@ -27,15 +47,6 @@ sub register {
 
     # Identical fields configuration
     my $identical_fields_factor = $conf->{identical_fields_factor} || 0.5;
-
-    # Honeypot link
-    $app->routes->route($honeypot_link)->via('post')->to(
-        cb => sub {
-            my $c = shift;
-            $c->session->{honeypot} = 1;
-            $c->render_text('Welcome!');
-        }
-    )->name('honeypot_link');
 
     $app->plugins->add_hook(
         after_static_dispatch => sub {
@@ -75,9 +86,9 @@ sub register {
             $bot_detected_cb->($c, 'POST with GET'), return
               if $c->req->url->query;
 
-            # Bot filled out a dummy field
-            $bot_detected_cb->($c, 'Dummy field submitted'), return
-              if $c->param($dummy_field);
+            # Bot filled out a dummy input
+            $bot_detected_cb->($c, 'Dummy input submitted'), return
+              if $c->param($dummy_input);
 
             # Bot is too fast
             my $last_form_submit = $c->session->{last_form_submit} || 0;
