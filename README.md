@@ -22,7 +22,7 @@ Validator
     my $validated_values_hashref = $validator->values;
 
 Bot protection
-______________
+--------------
 
     $self->plugin('bot_protection');
 
@@ -31,7 +31,8 @@ Features
 * Dummy field (bot fills out all the fields, including not visible one)
 * Honeypot form (bot submits non visible to a normal user form)
 * Cookies support check (bot has no cookies support)
-* Flood protection (bot submits forms too fast)
-* DDoS protection (bot submits the same forms many times)
 * Referrer check (bot submits form with invalid referrer header)
 * Identical fields check (bot submits form with identical fields)
+* Form signature (bot submits without visiting the form page or does it too fast)
+* Flood protection (bot submits forms too fast)
+* DDoS protection (bot submits the same forms many times)

@@ -9,7 +9,7 @@ use Test::More;
 
 plan skip_all => 'working sockets required for this test!'
   unless Mojo::IOLoop->new->generate_port;
-plan tests => 56;
+plan tests => 57;
 
 use Mojolicious::Lite;
 use Test::Mojo;
@@ -21,7 +21,7 @@ app->log->level('fatal');
 plugin 'bot_protection';
 
 # GET /
-get '/' => sub { shift->render_text('Hello') };
+get '/' => 'index';
 
 # POST /
 post '/' => sub { shift->render_text('Hello') };
@@ -38,7 +38,7 @@ my $t;
 $t = Test::Mojo->new;
 $t->client(Mojo::Client->new);
 $t->get_ok('/')->status_is(200);
-$t->post_ok('/honeypot')->status_is(200)->content_is('Welcome!');
+$t->post_ok('/honeypot')->status_is(404);
 $t->get_ok('/')->status_is(404);
 
 # Dummy field (dummy by default)
@@ -56,12 +56,14 @@ $t = Test::Mojo->new;
 $t->client(Mojo::Client->new);
 $t->post_form_ok('/' => {foo => 'bar'})->status_is(404);
 
-# Too fast (5s by default)
+# Too fast (2s by default)
 $t = Test::Mojo->new;
 $t->client(Mojo::Client->new);
 $t->get_ok('/')->status_is(200);
-$t->post_form_ok('/' => {foo => 'bar'})->status_is(200);
-$t->post_form_ok('/' => {foo => 'bar'})->status_is(404);
+sleep(1);
+my ($signature) = ($t->tx->res->body =~ m/signature.*?value="(.*?)"/);
+$t->post_form_ok('/' => {signature => $signature, foo => 'bar'})->status_is(200);
+$t->post_form_ok('/' => {signature => $signature, foo => 'bar'})->status_is(404);
 
 # Same path (10 by default)
 $t = Test::Mojo->new;
@@ -77,12 +79,17 @@ $t->get_ok('/'    => {foo => 'bar'})->status_is(200);
 $t = Test::Mojo->new;
 $t->client(Mojo::Client->new);
 $t->get_ok('/')->status_is(200);
-$t->post_form_ok('/' => {foo => 'bar', bar => 'bar'})
+sleep(1);
+($signature) = ($t->tx->res->body =~ m/signature.*?value="(.*?)"/);
+$t->post_form_ok(
+    '/' => {signature => $signature, foo => 'bar', bar => 'bar', baz => 123})
   ->status_is(200);
 
 $t = Test::Mojo->new;
 $t->client(Mojo::Client->new);
-$t->post_form_ok('/' => {foo => 'bar', bar => 'bar', baz => 'bar'})
+$t->get_ok('/')->status_is(200);
+($signature) = ($t->tx->res->body =~ m/signature.*?value="(.*?)"/);
+$t->post_form_ok('/' => {signature => $signature, foo => 'bar', bar => 'bar', baz => 'bar'})
   ->status_is(404);
 
 # Referrer
@@ -102,6 +109,12 @@ $t->get_ok('/helpers')->status_is(200)->content_is(<<'EOF');
 EOF
 
 __DATA__
+
+@@ index.html.ep
+<%= form_for 'index' => {%>
+<%= signature_input 'index' %>
+<%= input 'a', value => 'b' %>
+<%}%>
 
 @@ helpers.html.ep
 <%= dummy_input %>
