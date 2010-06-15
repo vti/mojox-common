@@ -12,8 +12,9 @@ use MojoX::CouchDB::Design;
 use constant DEBUG => $ENV{MOJOX_DEBUG} ? 1 : 0;
 
 __PACKAGE__->attr('database');
-__PACKAGE__->attr(address => 'localhost');
-__PACKAGE__->attr(port    => '5984');
+__PACKAGE__->attr(address      => 'localhost');
+__PACKAGE__->attr(port         => '5984');
+__PACKAGE__->attr('json_class' => 'Mojo::JSON');
 
 sub get_uuid {
     my ($self, $cb) = @_;
@@ -81,19 +82,30 @@ sub load_document {
 sub _new_database {
     my $self = shift;
 
-    return MojoX::CouchDB::Database->new(name => $self->database);
+    return MojoX::CouchDB::Database->new(
+        json_class => $self->json_class,
+        name       => $self->database
+    );
 }
 
 sub _new_design {
     my $self = shift;
 
-    return MojoX::CouchDB::Design->new(database => $self->database, @_);
+    return MojoX::CouchDB::Design->new(
+        json_class => $self->json_class,
+        database   => $self->database,
+        @_
+    );
 }
 
 sub _new_document {
     my $self = shift;
 
-    return MojoX::CouchDB::Document->new(database => $self->database, @_);
+    return MojoX::CouchDB::Document->new(
+        json_class => $self->json_class,
+        database   => $self->database,
+        @_
+    );
 }
 
 1;
