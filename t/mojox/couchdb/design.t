@@ -8,7 +8,7 @@ use Test::More tests => 6;
 use_ok('MojoX::CouchDB::Design');
 
 my $design = MojoX::CouchDB::Design->new(
-    database => 'kurly_test',
+    database => 'couchdb_test',
     name     => 'foo',
     params   => {views => {foo => {map => 'function() {}'}}}
 );

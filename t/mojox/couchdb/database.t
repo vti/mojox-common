@@ -7,7 +7,7 @@ use Test::More tests => 13;
 
 use_ok('MojoX::CouchDB::Database');
 
-my $db = MojoX::CouchDB::Database->new(name => 'kurly_test');
+my $db = MojoX::CouchDB::Database->new(name => 'couchdb_test');
 
 $db->find_documents(
     foo => sub {

@@ -9,7 +9,7 @@ use_ok('MojoX::CouchDB::Design');
 use_ok('MojoX::CouchDB::Document');
 
 my $design = MojoX::CouchDB::Design->new(
-    database => 'kurly_test',
+    database => 'couchdb_test',
     name     => 'foo',
     params =>
       {views => {foo => {map => 'function(doc){ emit(doc._id, doc.foo)}'}}}
@@ -43,7 +43,7 @@ $design->view(
 );
 
 my $doc = MojoX::CouchDB::Document->new(
-    database => 'kurly_test',
+    database => 'couchdb_test',
     id       => 'foo',
     params   => {foo => 'bar'}
 );

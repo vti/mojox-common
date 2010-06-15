@@ -8,7 +8,7 @@ use Test::More tests => 27;
 use_ok('MojoX::CouchDB::Document');
 
 my $doc = MojoX::CouchDB::Document->new(
-    database => 'kurly_test',
+    database => 'couchdb_test',
     id       => 'foo',
     params   => {foo => 'bar'}
 );
@@ -33,7 +33,7 @@ $doc->create(
 );
 
 MojoX::CouchDB::Document->new(
-    database => 'kurly_test',
+    database => 'couchdb_test',
     id       => 'foo'
   )->create(
     sub {
@@ -43,7 +43,7 @@ MojoX::CouchDB::Document->new(
     }
   );
 
-$doc = MojoX::CouchDB::Document->new(database => 'kurly_test', id => 'foo');
+$doc = MojoX::CouchDB::Document->new(database => 'couchdb_test', id => 'foo');
 
 $doc->load(
     sub {
@@ -90,7 +90,7 @@ $doc->delete(
     }
 );
 
-$doc = MojoX::CouchDB::Document->new(database => 'kurly_test');
+$doc = MojoX::CouchDB::Document->new(database => 'couchdb_test');
 $doc->create(
     sub {
         my ($self, $error) = @_;

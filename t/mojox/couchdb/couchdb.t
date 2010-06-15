@@ -7,7 +7,7 @@ use Test::More tests => 10;
 
 use_ok('MojoX::CouchDB');
 
-my $couch = MojoX::CouchDB->new(database => 'kurly_test');
+my $couch = MojoX::CouchDB->new(database => 'couchdb_test');
 
 $couch->get_uuid(
     sub {

@@ -112,7 +112,6 @@ __DATA__
 
 @@ index.html.ep
 <%= form_for 'index' => {%>
-<%= signature_input 'index' %>
 <%= input 'a', value => 'b' %>
 <%}%>
 

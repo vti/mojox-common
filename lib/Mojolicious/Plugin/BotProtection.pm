@@ -60,6 +60,32 @@ sub register {
         }
     );
 
+    $app->renderer->add_helper(
+        form_for => sub {
+            my $c    = shift;
+            my $name = shift;
+
+            # Captures
+            my $captures = ref $_[0] eq 'HASH' ? shift : {};
+
+            return $c->helper(
+                'tag' => 'form' => action => $c->url_for($name, $captures),
+                @_
+            ) if $name eq 'honeypot_link';
+
+            my $cb = pop;
+
+            $c->helper(
+                'tag' => 'form' => action => $c->url_for($name, $captures),
+                @_    => sub {
+                    $c->helper('signature_input')
+                      . $c->helper('dummy_input')
+                      . $cb->($c);
+                }
+            );
+        }
+    );
+
     $app->plugins->add_hook(
         after_static_dispatch => sub {
             my ($self, $c) = @_;
