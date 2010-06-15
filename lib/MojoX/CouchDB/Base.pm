@@ -7,12 +7,14 @@ use base 'Mojo::Base';
 
 use Mojo::URL;
 use Mojo::Client;
-use Mojo::JSON;
+use Mojo::Loader;
 
 use constant DEBUG => $ENV{MOJOX_DEBUG} ? 1 : 0;
 
-__PACKAGE__->attr(address  => 'localhost');
-__PACKAGE__->attr(port     => '5984');
+__PACKAGE__->attr(address    => 'localhost');
+__PACKAGE__->attr(port       => '5984');
+
+__PACKAGE__->attr(json_class => 'Mojo::JSON');
 
 __PACKAGE__->attr(client => sub { Mojo::Client->singleton->async });
 
@@ -55,11 +57,19 @@ sub _build_url {
     return $url;
 }
 
+sub _json {
+    my $self = shift;
+
+    my $json_class = $self->json_class;
+    Mojo::Loader->new->load($json_class);
+    return $json_class->new;
+}
+
 sub _encode {
     my $self = shift;
     my $data = shift;
 
-    my $json = Mojo::JSON->new;
+    my $json = $self->_json;
     $data = $json->encode($data);
     if (!defined($data) || $json->error) {
         return undef;
@@ -72,7 +82,7 @@ sub _decode {
     my $self = shift;
     my $data = shift;
 
-    my $json = Mojo::JSON->new;
+    my $json = $self->_json;
     $data = $json->decode($data);
     if (!defined($data) || $json->error) {
         return;
