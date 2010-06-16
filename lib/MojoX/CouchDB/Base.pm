@@ -10,16 +10,18 @@ use Mojo::IOLoop;
 use Mojo::Loader;
 use Mojo::URL;
 
-use constant DEBUG => $ENV{MOJOX_DEBUG} ? 1 : 0;
+use constant DEBUG => $ENV{MOJOX_COUCHDB_DEBUG} ? 1 : 0;
 
-__PACKAGE__->attr(address    => 'localhost');
-__PACKAGE__->attr(port       => '5984');
+__PACKAGE__->attr(address => 'localhost');
+__PACKAGE__->attr(port    => '5984');
 
 __PACKAGE__->attr(json_class => 'Mojo::JSON');
 
 __PACKAGE__->attr(client =>
       sub { Mojo::Client->singleton->async->ioloop(Mojo::IOLoop->singleton) }
 );
+
+__PACKAGE__->attr('content_type' => 'application/json');
 
 sub get_uuid {
     my ($self, $cb) = @_;
@@ -60,7 +62,7 @@ sub _build_url {
     return $url;
 }
 
-sub _json {
+sub json {
     my $self = shift;
 
     my $json_class = $self->json_class;
@@ -72,7 +74,7 @@ sub _encode {
     my $self = shift;
     my $data = shift;
 
-    my $json = $self->_json;
+    my $json = $self->json;
     $data = $json->encode($data);
     if (!defined($data) || $json->error) {
         return undef;
@@ -85,7 +87,7 @@ sub _decode {
     my $self = shift;
     my $data = shift;
 
-    my $json = $self->_json;
+    my $json = $self->json;
     $data = $json->decode($data);
     if (!defined($data) || $json->error) {
         return;
@@ -102,7 +104,7 @@ sub _make_request {
     if (ref($path) eq 'ARRAY') {
         my $p = shift @$path;
         $query = {@$path};
-        $path = $p;
+        $path  = $p;
     }
 
     ($cb, $data) = ($data, $cb) unless $cb;
@@ -111,7 +113,8 @@ sub _make_request {
     my $url;
     if ($method eq 'post' || $method eq 'put') {
         $url = $self->_build_url($path, $query);
-        $body = $self->_encode($data) if $data;
+
+        $body = ref($data) eq 'HASH' ? $self->_encode($data) : $data if $data;
     }
     else {
         $data ||= {};
@@ -122,7 +125,7 @@ sub _make_request {
     warn uc($method) . " $url $body" if DEBUG;
 
     $self->client->$method(
-        $url => $body => sub {
+        $url => {'content-type' => $self->content_type} => $body => sub {
             my ($client, $tx) = @_;
 
             warn $tx->res if DEBUG;
@@ -130,16 +133,22 @@ sub _make_request {
             return $cb->($self, undef, join(' ', $tx->error))
               if $tx->has_error;
 
-            my $json = $self->_decode($tx->res->body);
-            return $cb->($self, undef, "JSON decoding error")
-              unless defined $json;
+            my $body = $tx->res->body;
 
-            if (my $error = $json->{error}) {
-                $error .= ': ' . $json->{reason} if $json->{reason};
-                return $cb->($self, undef, $error);
+            if ($body =~ m/^{/) {
+                my $json = $self->_decode($body);
+                return $cb->($self, undef, "JSON decoding error")
+                  unless defined $json;
+
+                if (my $error = $json->{error}) {
+                    $error .= ': ' . $json->{reason} if $json->{reason};
+                    return $cb->($self, undef, $error);
+                }
+
+                $body = $json;
             }
 
-            return $cb->($self, $json);
+            return $cb->($self, $body);
         }
     )->process;
 }

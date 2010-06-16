@@ -5,6 +5,8 @@ use warnings;
 
 use Test::More tests => 6;
 
+use Mojo::IOLoop;
+
 use_ok('MojoX::CouchDB::Design');
 
 my $design = MojoX::CouchDB::Design->new(
@@ -20,14 +22,18 @@ $design->create(
         ok(!$error);
         ok($design->id);
         ok($design->rev);
+
+        $design->delete(
+            sub {
+                my ($design, $error) = @_;
+
+                ok(!$error);
+                ok(!$design->rev);
+
+                Mojo::IOLoop->singleton->stop;
+            }
+        );
     }
 );
 
-$design->delete(
-    sub {
-        my ($design, $error) = @_;
-
-        ok(!$error);
-        ok(!$design->rev);
-    }
-);
+Mojo::IOLoop->singleton->start;

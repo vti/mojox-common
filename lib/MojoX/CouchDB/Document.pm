@@ -10,6 +10,15 @@ use constant DEBUG => $ENV{MOJOX_DEBUG} ? 1 : 0;
 __PACKAGE__->attr('database');
 __PACKAGE__->attr([qw/id rev/]);
 __PACKAGE__->attr(params => sub {{}});
+__PACKAGE__->attr('attachments');
+
+use MojoX::CouchDB::Attachment;
+
+sub path {
+    my $self = shift;
+
+    return join('/', $self->database, $self->id);
+}
 
 sub create {
     my ($self, $cb) = @_;
@@ -34,7 +43,7 @@ sub create {
 sub _create {
     my ($self, $cb) = @_;
 
-    my $path = join('/', $self->database, $self->id);
+    my $path = $self->path;
 
     my $params = $self->params;
 
@@ -56,7 +65,7 @@ sub _create {
 sub load {
     my ($self, $cb) = @_;
 
-    my $path = join('/', $self->database, $self->id);
+    my $path = $self->path;
 
     $self->raw_get(
         $path => sub {
@@ -77,6 +86,25 @@ sub load {
             $self->rev(delete $answer->{_rev});
             $self->params($answer);
 
+            if (my $attachments = delete $answer->{_attachments}) {
+                $self->attachments({});
+
+                while (my ($key, $value) = each %$attachments) {
+                    my $at = MojoX::CouchDB::Attachment->new(
+                        id           => $self->id,
+                        rev          => $self->rev,
+                        revpos       => $value->{revpos},
+                        database     => $self->database,
+                        port         => $self->port,
+                        name         => $key,
+                        length       => $value->{length},
+                        content_type => $value->{'content_type'}
+                    );
+
+                    $self->attachments->{$key} = $at;
+                }
+            }
+
             return $cb->($self);
         }
     );
@@ -85,11 +113,24 @@ sub load {
 sub update {
     my ($self, $cb) = @_;
 
-    my $path = join('/', $self->database, $self->id);
+    my $path = $self->path;
 
     my $params = $self->params;
     $params->{_id} = $self->id;
     $params->{_rev} = $self->rev;
+
+    if ($self->attachments) {
+        $params->{_attachments} = {};
+
+        while (my ($key, $value) = each %{$self->attachments}) {
+            $params->{_attachments}->{$key} = {
+                stub           => $self->json->true,
+                'content_type' => $value->{'content_type'},
+                length         => $value->{length},
+                revpos         => $value->{revpos}
+            };
+        }
+    }
 
     $self->raw_put(
         $path => $params => sub {
@@ -99,6 +140,13 @@ sub update {
 
             $self->rev($answer->{rev});
 
+            if ($self->attachments) {
+                while (my ($key, $value) = each %{$self->attachments}) {
+                    $value->rev($self->rev);
+                }
+            }
+
+
             return $cb->($self);
         }
     );
@@ -107,7 +155,7 @@ sub update {
 sub delete {
     my ($self, $cb) = @_;
 
-    my $path = join('/', $self->database, $self->id);
+    my $path = $self->path;
 
     my $params = {rev => $self->rev};
 

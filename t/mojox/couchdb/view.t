@@ -5,6 +5,8 @@ use warnings;
 
 use Test::More tests => 14;
 
+use Mojo::IOLoop;
+
 use_ok('MojoX::CouchDB::Design');
 use_ok('MojoX::CouchDB::Document');
 
@@ -22,51 +24,62 @@ $design->create(
         ok(!$error);
         ok($design->id);
         ok($design->rev);
+
+        $design->view(
+            'bar' => sub {
+                my ($design, $answer, $error) = @_;
+
+                ok($error);
+
+                $design->view(
+                    'foo' => sub {
+                        my ($self, $answer, $error) = @_;
+
+                        ok(!$error);
+                        is(@$answer, 0);
+
+                        my $doc = MojoX::CouchDB::Document->new(
+                            database => 'couchdb_test',
+                            id       => 'foo',
+                            params   => {foo => 'bar'}
+                        );
+                        $doc->create(
+                            sub {
+
+                                $design->view(
+                                    'foo' => sub {
+                                        my ($self, $answer, $error) = @_;
+
+                                        ok(!$error);
+                                        is(@$answer,         1);
+                                        is($answer->[0]->id, $doc->id);
+                                        is($answer->[0]->params->{value},
+                                            'bar');
+
+                                        $design->delete(
+                                            sub {
+                                                my ($design, $error) = @_;
+
+                                                ok(!$error);
+                                                ok(!$design->rev);
+
+                                                $doc->delete(
+                                                    sub {
+                                                        Mojo::IOLoop
+                                                          ->singleton->stop;
+                                                    }
+                                                );
+                                            }
+                                        );
+                                    }
+                                );
+                            }
+                        );
+                    }
+                );
+            }
+        );
     }
 );
 
-$design->view(
-    'bar' => sub {
-        my ($self, $answer, $error) = @_;
-
-        ok($error);
-    }
-);
-
-$design->view(
-    'foo' => sub {
-        my ($self, $answer, $error) = @_;
-
-        ok(!$error);
-        is(@$answer, 0);
-    }
-);
-
-my $doc = MojoX::CouchDB::Document->new(
-    database => 'couchdb_test',
-    id       => 'foo',
-    params   => {foo => 'bar'}
-);
-$doc->create(sub { });
-
-$design->view(
-    'foo' => sub {
-        my ($self, $answer, $error) = @_;
-
-        ok(!$error);
-        is(@$answer, 1);
-        is($answer->[0]->id, $doc->id);
-        is($answer->[0]->params->{value}, 'bar');
-    }
-);
-
-$design->delete(
-    sub {
-        my ($design, $error) = @_;
-
-        ok(!$error);
-        ok(!$design->rev);
-    }
-);
-
-$doc->delete(sub {});
+Mojo::IOLoop->singleton->start;

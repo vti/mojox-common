@@ -5,6 +5,8 @@ use warnings;
 
 use Test::More tests => 3;
 
+use Mojo::IOLoop;
+
 use_ok('MojoX::CouchDB');
 
 my $couch = MojoX::CouchDB->new(database => 'couchdb_test');
@@ -15,5 +17,9 @@ $couch->create_database(
 
         ok(!$error);
         ok($db);
+
+        Mojo::IOLoop->singleton->stop;
     }
 );
+
+Mojo::IOLoop->singleton->start;

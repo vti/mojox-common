@@ -3,7 +3,9 @@
 use strict;
 use warnings;
 
-use Test::More tests => 10;
+use Test::More tests => 11;
+
+use Mojo::IOLoop;
 
 use_ok('MojoX::CouchDB');
 
@@ -15,39 +17,39 @@ $couch->get_uuid(
 
         ok(!$error);
         ok($answer);
+
+        $couch->create_document(
+            {id => 'foo', params => {foo => 'bar'}},
+            sub {
+                my ($couch, $doc, $error) = @_;
+
+                ok(!$error);
+                ok($doc);
+                ok($doc->rev);
+                is($doc->params->{foo}, 'bar');
+
+                $couch->update_document(
+                    {id => 'foo', rev => $doc->rev, params => {foo => 'baz'}} => sub {
+                        my ($couch, $d, $error) = @_;
+
+                        ok(!$error);
+                        ok($d->rev ne $doc->rev);
+                        is($d->params->{foo}, 'baz');
+
+                        $couch->delete_document(
+                            {id => 'foo', rev => $d->rev} => sub {
+                                my ($couch, $error) = @_;
+
+                                ok(!$error);
+
+                                Mojo::IOLoop->singleton->stop;
+                            }
+                        );
+                    }
+                );
+            }
+        );
     }
 );
 
-my $DOC;
-$couch->create_document(
-    {id => 'foo', params => {foo => 'bar'}},
-    sub {
-        my ($couch, $doc, $error) = @_;
-
-        ok(!$error);
-        ok($doc);
-        is($doc->params->{foo}, 'bar');
-
-        $DOC = $doc;
-    }
-);
-
-$couch->update_document(
-    {id => 'foo', rev => $DOC->rev, params => {foo => 'baz'}} => sub {
-        my ($couch, $doc, $error) = @_;
-
-        ok(!$error);
-        ok($doc->rev ne $DOC->rev);
-        is($doc->params->{foo}, 'baz');
-
-        $DOC = $doc;
-    }
-);
-
-$couch->delete_document(
-    {id => 'foo', rev => $DOC->rev} => sub {
-        my ($couch, $error) = @_;
-
-        ok(!$error);
-    }
-);
+Mojo::IOLoop->singleton->start;
