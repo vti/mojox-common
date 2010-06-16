@@ -17,8 +17,8 @@ $doc->load(
     sub {
         my ($self, $error) = @_;
 
-        ok(!$error);
         ok(!$self->rev);
+        ok(!$error);
     }
 );
 

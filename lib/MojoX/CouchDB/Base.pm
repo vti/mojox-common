@@ -5,9 +5,10 @@ use warnings;
 
 use base 'Mojo::Base';
 
-use Mojo::URL;
 use Mojo::Client;
+use Mojo::IOLoop;
 use Mojo::Loader;
+use Mojo::URL;
 
 use constant DEBUG => $ENV{MOJOX_DEBUG} ? 1 : 0;
 
@@ -16,7 +17,9 @@ __PACKAGE__->attr(port       => '5984');
 
 __PACKAGE__->attr(json_class => 'Mojo::JSON');
 
-__PACKAGE__->attr(client => sub { Mojo::Client->singleton->async });
+__PACKAGE__->attr(client =>
+      sub { Mojo::Client->singleton->async->ioloop(Mojo::IOLoop->singleton) }
+);
 
 sub get_uuid {
     my ($self, $cb) = @_;
