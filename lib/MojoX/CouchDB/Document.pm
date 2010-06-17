@@ -12,6 +12,7 @@ __PACKAGE__->attr([qw/id rev/]);
 __PACKAGE__->attr(params => sub {{}});
 __PACKAGE__->attr('attachments');
 
+use Mojo::ByteStream;
 use MojoX::CouchDB::Attachment;
 
 sub path {
@@ -47,6 +48,24 @@ sub _create {
 
     my $params = $self->params;
 
+    if (my $attachments = $self->attachments) {
+        $params->{_attachments} = {};
+
+        while (my ($key, $value) = each %$attachments) {
+            my $data = Mojo::ByteStream->new($value->{data})->b64_encode;
+            $data =~ s/\s+$//g;
+            $params->{_attachments}->{$key} =
+              {content_type => $value->{content_type}, data => $data};
+
+            $self->attachments->{$key} = MojoX::CouchDB::Attachment->new(
+                database     => $self->database,
+                name         => $key,
+                length       => length($value->{data}),
+                content_type => $value->{content_type}
+            );
+        }
+    }
+
     $self->raw_put(
         $path => $params => sub {
             my ($self, $answer, $error) = @_;
@@ -56,6 +75,13 @@ sub _create {
             return $cb->($self, 'Unknown error') unless $answer->{ok};
 
             $self->rev($answer->{rev});
+
+            if (my $attachments = $self->attachments) {
+                while (my ($key, $value) = each %$attachments) {
+                    $self->attachments->{$key}->id($self->id);
+                    $self->attachments->{$key}->rev($self->rev);
+                }
+            }
 
             return $cb->($self);
         }
