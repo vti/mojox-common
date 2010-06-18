@@ -52,17 +52,15 @@ sub _create {
         $params->{_attachments} = {};
 
         while (my ($key, $value) = each %$attachments) {
-            my $data = Mojo::ByteStream->new($value->{data})->b64_encode;
-            $data =~ s/\s+$//g;
-            $params->{_attachments}->{$key} =
-              {content_type => $value->{content_type}, data => $data};
-
-            $self->attachments->{$key} = MojoX::CouchDB::Attachment->new(
-                database     => $self->database,
-                name         => $key,
-                length       => length($value->{data}),
-                content_type => $value->{content_type}
+            my $doc = MojoX::CouchDB::Attachment->new(
+                database => $self->database,
+                name     => $key
             );
+
+            $doc->from_hash($value);
+
+            $self->attachments->{$key} = $doc;
+            $params->{_attachments}->{$key} = $doc->to_hash;
         }
     }
 

@@ -30,7 +30,7 @@ $doc->create(
             rev          => $doc->rev,
             content_type => 'text/html',
             name         => 'foo.txt',
-            params       => 123
+            content      => 123
         );
 
         $at->create(
