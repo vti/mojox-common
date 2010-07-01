@@ -88,6 +88,24 @@ sub register {
         }
     );
 
+    $app->renderer->add_helper(
+        img_p => sub {
+            my $c = shift;
+            my $src  = shift;
+            my $name = shift;
+
+            my $params = $conf->{images}->{$name};
+            return '' unless $params;
+
+            $src =~ s{^/}{};
+            $src = File::Spec->catfile($conf->{dstdir}, $name, $src);
+
+            my ($w, $h) = split 'x' => $params->{size};
+
+            $c->helper('img', "/$src", width => $w, height => $h);
+        }
+    );
+
     return;
 }
 

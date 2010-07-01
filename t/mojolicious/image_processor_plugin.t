@@ -12,13 +12,13 @@ use Mojo::IOLoop;
 
 plan skip_all => 'working sockets required for this test!'
   unless Mojo::IOLoop->new->generate_port;
-plan tests => 15;
+plan tests => 18;
 
 use Mojolicious::Lite;
 use Test::Mojo;
 
 # Silence
-#app->log->level('fatal');
+app->log->level('fatal');
 
 # Cleanup
 File::Path::remove_tree("$FindBin::Bin/image_processor_plugin/public/images");
@@ -28,6 +28,8 @@ app->static->root(app->home->rel_dir('public'));
 
 # Load plugin
 plugin 'image_processor' => {images => {small => {size => '100x100'}}};
+
+get '/' => 'index';
 
 my $t;
 
@@ -50,3 +52,13 @@ $t->get_ok('/images/small/linux.png')->status_is(200)->content_type_is('image/pn
 
 # Cache hit
 $t->get_ok('/images/small/linux.png')->status_is(200)->content_type_is('image/png');
+
+# Helper
+$t->get_ok('/')->status_is(200)
+  ->content_is(
+    qq{<img height="100" src="/images/small/linux.png" width="100" />\n});
+
+__DATA__
+
+@@ index.html.ep
+<%= img_p '/linux.png' => 'small' %>
