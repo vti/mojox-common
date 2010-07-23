@@ -36,45 +36,23 @@ sub field {
     return $self;
 }
 
-sub required {
-    my $self = shift;
+sub _each {
+    my $self   = shift;
+    my $method = shift;
 
     foreach my $name (@{$self->bulk}) {
-        $self->field($name)->required(@_);
+        $self->field($name)->$method(@_);
     }
+
 
     return $self;
 }
 
-sub length {
-    my $self = shift;
-
-    foreach my $name (@{$self->bulk}) {
-        $self->field($name)->length(@_);
-    }
-
-    return $self;
-}
-
-sub regexp {
-    my $self = shift;
-
-    foreach my $name (@{$self->bulk}) {
-        $self->field($name)->regexp(@_);
-    }
-
-    return $self;
-}
-
-sub email {
-    my $self = shift;
-
-    foreach my $name (@{$self->bulk}) {
-        $self->field($name)->email(@_);
-    }
-
-    return $self;
-}
+sub required { shift->_each(required => @_) }
+sub length   { shift->_each(length   => @_) }
+sub regexp   { shift->_each(regexp   => @_) }
+sub email    { shift->_each(email    => @_) }
+sub callback { shift->_each(callback => @_) }
 
 sub when {
     my $self = shift;
