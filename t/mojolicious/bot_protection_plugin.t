@@ -62,8 +62,10 @@ $t->client(Mojo::Client->new);
 $t->get_ok('/')->status_is(200);
 sleep(1);
 my ($signature) = ($t->tx->res->body =~ m/signature.*?value="(.*?)"/);
-$t->post_form_ok('/' => {signature => $signature, foo => 'bar'})->status_is(200);
-$t->post_form_ok('/' => {signature => $signature, foo => 'bar'})->status_is(404);
+$t->post_form_ok('/' => {signature => $signature, foo => 'bar'})
+  ->status_is(200);
+$t->post_form_ok('/' => {signature => $signature, foo => 'bar'})
+  ->status_is(404);
 
 # Same path (10 by default)
 $t = Test::Mojo->new;
@@ -89,8 +91,9 @@ $t = Test::Mojo->new;
 $t->client(Mojo::Client->new);
 $t->get_ok('/')->status_is(200);
 ($signature) = ($t->tx->res->body =~ m/signature.*?value="(.*?)"/);
-$t->post_form_ok('/' => {signature => $signature, foo => 'bar', bar => 'bar', baz => 'bar'})
-  ->status_is(404);
+$t->post_form_ok(
+    '/' => {signature => $signature, foo => 'bar', bar => 'bar', baz => 'bar'}
+)->status_is(404);
 
 # Referrer
 $t = Test::Mojo->new;
@@ -111,7 +114,7 @@ EOF
 __DATA__
 
 @@ index.html.ep
-<%= form_for 'index' => {%>
+<%= signed_form_for 'index' => {%>
 <%= input 'a', value => 'b' %>
 <%}%>
 

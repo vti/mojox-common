@@ -44,24 +44,29 @@ sub register {
     # Form signature
     $app->renderer->add_helper(
         signature_input => sub {
-            my $c = shift;
+            my $c      = shift;
             my $target = shift;
 
             my %params = (time => time, url => $c->url_for($target)->to_abs);
-            my $value = join(',' => map {$_ . '=' . $params{$_}} keys %params);
+            my $value =
+              join(',' => map { $_ . '=' . $params{$_} } keys %params);
             $value = Mojo::ByteStream->new($value)->b64_encode;
             $value =~ s/\s+$//;
 
             my $signature =
-              Mojo::ByteStream->new($value)->hmac_md5_sum($conf->{secret})->to_string;
+              Mojo::ByteStream->new($value)->hmac_md5_sum($conf->{secret})
+              ->to_string;
             $value = $value .= "--$signature";
 
-            return $c->helper(input => signature => type => 'hidden', value => $value);
+            return $c->helper(
+                input => signature => type => 'hidden',
+                value => $value
+            );
         }
     );
 
     $app->renderer->add_helper(
-        form_for => sub {
+        signed_form_for => sub {
             my $c    = shift;
             my $name = shift;
 
@@ -134,7 +139,7 @@ sub register {
 }
 
 sub _honeypot_visited {
-    my $c = shift;
+    my $c    = shift;
     my $conf = shift;
 
     return 1 if $c->session->{honeypot};
@@ -150,7 +155,7 @@ sub _honeypot_visited {
 }
 
 sub _is_too_fast {
-    my $c = shift;
+    my $c    = shift;
     my $conf = shift;
 
     # Too fast form submitting configuration
@@ -186,13 +191,13 @@ sub _wrong_signature {
     $value = Mojo::ByteStream->new($value)->b64_decode;
 
     my @values = split /,/, $value;
-    my %params = map {split /=/} @values;
+    my %params = map { split /=/ } @values;
 
     # Wrong form
     return 1 if $params{url} ne $c->req->url->to_abs;
 
     # Too far in the past
-    return 1 if time - $params{time} > 60 * 60; # Hour
+    return 1 if time - $params{time} > 60 * 60;    # Hour
 
     # Too fast
     return 1 if time - $params{time} < 1;
@@ -201,7 +206,7 @@ sub _wrong_signature {
 }
 
 sub _identical_fields {
-    my $c = shift;
+    my $c    = shift;
     my $conf = shift;
 
     # Identical fields configuration
@@ -211,7 +216,7 @@ sub _identical_fields {
     if (@params > $max) {
         my $values = {};
         ++$values->{$c->param($_)} for @params;
-        my @repeated = sort {$b <=> $a} grep { $_ >= 2 } values %$values;
+        my @repeated = sort { $b <=> $a } grep { $_ >= 2 } values %$values;
         return 1 if $repeated[0] && $repeated[0] > $max;
     }
 
@@ -219,7 +224,7 @@ sub _identical_fields {
 }
 
 sub _identical_requests {
-    my $c = shift;
+    my $c    = shift;
     my $conf = shift;
 
     # Same path request configuration
@@ -264,11 +269,12 @@ sub _bot_detected_cb {
     my $c      = shift;
     my $action = shift;
 
-    my $ip = $c->tx->remote_address;
-    my $ua = $c->req->headers->user_agent;
+    my $ip     = $c->tx->remote_address;
+    my $ua     = $c->req->headers->user_agent;
     my $method = $c->req->method;
-    my $path = $c->req->url->path;
-    $c->app->log->error("Bot detected: $action: $method $path from $ip via $ua");
+    my $path   = $c->req->url->path;
+    $c->app->log->error(
+        "Bot detected: $action: $method $path from $ip via $ua");
 
     return $c->render_not_found;
 }
